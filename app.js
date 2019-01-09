@@ -52,7 +52,16 @@ app.use((req, res, next) => {
 app.use('/graphql', graphqlExpress({
   schema: graphqlSchema,
   rootValue: graphqlResolver,
-  graphiql: true
+  graphiql: true,
+  formatError(err) {
+    if(!err.originalError){
+      return err;
+    }
+    const data = err.originalError.data;
+    const message = err.message || 'An error occurend.';
+    const code = err.originalError.code || 500;
+    return { message: message, status: code, data: data };
+  }
 }));
 
 app.use((error, req, res, next) => {
@@ -65,9 +74,12 @@ app.use((error, req, res, next) => {
 
 mongoose
   .connect(
-    'mongodb://Luq:Haslo1@cluster0-shard-00-00-gw1sh.mongodb.net:27017,cluster0-shard-00-01-gw1sh.mongodb.net:27017,cluster0-shard-00-02-gw1sh.mongodb.net:27017/NodeUdemy?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true'
+    'mongodb://Luq:Haslo1@cluster0-shard-00-00-gw1sh.mongodb.net:27017,cluster0-shard-00-01-gw1sh.mongodb.net:27017,cluster0-shard-00-02-gw1sh.mongodb.net:27017/NodeUdemy?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true',
+    {useNewUrlParser: true}
   )
   .then(result => {
-    app.listen(8080);
+    app.listen(8080, () => {
+      console.log('Server listen at port 8080.')
+    });
   })
   .catch(err => console.log(err));
