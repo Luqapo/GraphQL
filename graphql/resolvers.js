@@ -3,6 +3,7 @@ const validator = require('validator');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
+const Post = require('../models/post');
 
 module.exports = {
     createUser: async function({ userInput }, req) {
@@ -59,5 +60,38 @@ module.exports = {
             { expiresIn: '1h' }
         );
         return { token: token, userId: user._id.toString() };
+    },
+    createPost: async ({ postInput }, req) => {
+        console.log(postInput);
+        const errors = [];
+        if(!validator.isEmpty(userInput.title)){
+            errors.push({message: 'Title is invalid.'})
+        }
+        if(
+            validator.isEmpty(userInput.content) || 
+            !validator.isLength(userInput.content, {min: 5})
+        ){
+            errors.push({message: 'Content to short.'})
+        }
+        if(!validator.isEmpty(userInput.imageUrl)){
+            errors.push({message: 'ImageUrl should not be empty.'})
+        }
+        if(errors.length > 0){
+            const error = new Error('Invalid input.');
+            error.data = errors;
+            error.code = 422;
+            throw error;
+        }
+        const post = await Post.create({
+            title: postInput.title,
+            content: postInput.content,
+            imageUrl: postInput.imageUrl
+        })
+
+        return { 
+            ...post._doc, 
+            _id: post._id.toString(), 
+            createdAt: post.createdAt.toISOString(), 
+            updatedAt: post.updatedAt.toISOString() };
     }
 };

@@ -1,15 +1,15 @@
 {
-  "name": "nodejs-complete-guide",
+  "name": "graphql",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/udemy-course-nodejs-complete"
+    "url": ""
   },
   "author": "",
   "license": "ISC",
@@ -18,7 +18,6 @@
     "body-parser": "^1.18.3",
     "express": "^4.16.3",
     "express-graphql": "^0.7.1",
-    "express-validator": "^5.3.0",
     "graphql": "^14.0.2",
     "jsonwebtoken": "^8.3.0",
     "mongoose": "^5.3.2",
