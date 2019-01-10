@@ -62,6 +62,7 @@ class Feed extends Component {
           _id
           title
           content
+          imageUrl
           creator {
             name
           }
@@ -89,7 +90,6 @@ class Feed extends Component {
           console.log('Error!');
           throw new Error('Creating a post failed!');
         }
-        console.log(resData)
         this.setState({
           posts: resData.data.loadPosts.posts.map(post => {
             return {
@@ -97,7 +97,7 @@ class Feed extends Component {
               imagePath: post.imageUrl
             };
           }),
-          totalPosts: resData.totalItems,
+          totalPosts: resData.data.loadPosts.totalPosts,
           postsLoading: false
         });
       })
