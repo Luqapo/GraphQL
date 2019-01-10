@@ -62,18 +62,22 @@ module.exports = {
         return { token: token, userId: user._id.toString() };
     },
     createPost: async ({ postInput }, req) => {
-        console.log(postInput);
+        if(!req.isAuth){
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
         const errors = [];
-        if(!validator.isEmpty(userInput.title)){
+        if(validator.isEmpty(postInput.title)){
             errors.push({message: 'Title is invalid.'})
         }
         if(
-            validator.isEmpty(userInput.content) || 
-            !validator.isLength(userInput.content, {min: 5})
+            validator.isEmpty(postInput.content) || 
+            !validator.isLength(postInput.content, {min: 5})
         ){
             errors.push({message: 'Content to short.'})
         }
-        if(!validator.isEmpty(userInput.imageUrl)){
+        if(validator.isEmpty(postInput.imageUrl)){
             errors.push({message: 'ImageUrl should not be empty.'})
         }
         if(errors.length > 0){
@@ -82,16 +86,73 @@ module.exports = {
             error.code = 422;
             throw error;
         }
+        const user = await User.findById(req.userId);
+        if(!user){
+            const error = new Error('Invalid user!');
+            error.code = 401;
+            throw error;
+        }
         const post = await Post.create({
             title: postInput.title,
             content: postInput.content,
-            imageUrl: postInput.imageUrl
+            imageUrl: postInput.imageUrl,
+            creator: user
         })
+        user.posts.push(post);
+        await user.save();
 
         return { 
             ...post._doc, 
             _id: post._id.toString(), 
             createdAt: post.createdAt.toISOString(), 
             updatedAt: post.updatedAt.toISOString() };
+    },
+    loadPosts: async ({ page }, req) => {
+        console.log('Query');
+        if(!req.isAuth){
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        if(!page){
+            page = 1;
+        }
+        const perPage = 2;
+        const posts = await Post.find()
+            .sort({ createdAt: -1 })
+            .skip((page -1) * perPage)
+            .limit(perPage)
+            .populate('creator');
+        const totalPosts = await Post.find().countDocuments();
+
+        return { posts: posts.map(p => {
+            return {
+                ...p._doc,
+                _id: p._id.toString(),
+                createdAt: p.createdAt.toISOString(),
+                updatedAt: p.updatedAt.toISOString()
+            };
+        }), 
+        totalPosts: totalPosts };
+    },
+    loadPost: async ({ postId }, req) => {
+        if(!req.isAuth){
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const post = await Post.findById(postId).populate('creator');
+        if(!post){
+            const error = new Error('No post found!');
+            error.code = 404;
+            throw error;
+        }
+        
+        return { 
+            ...post._doc, 
+            _id: post._id.toString(), 
+            createdAt: post.createdAt.toISOString(), 
+            updatedAt: post.updatedAt.toISOString() 
+        }
     }
 };

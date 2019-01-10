@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -8,6 +9,8 @@ const graphqlExpress = require('express-graphql');
 
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
+
+const auth = require('./middleware/auth');
 
 const app = express();
 
@@ -52,6 +55,23 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(auth);
+
+app.put('/post-image', (req, res, next) => {
+  if(!req.isAuth){
+    throw new Error('Not authenticated!');
+  }
+  if(!req.file){
+    return res.status(200).json({ message: 'No file provided!'});
+  }
+  if(req.body.oldPath){
+    clearImage(req.body.oldPath);
+  }
+  return res
+    .status(201)
+    .json({ message: 'File stored.', filePath: req.file.path})
+})
+
 app.use('/graphql', graphqlExpress({
   schema: graphqlSchema,
   rootValue: graphqlResolver,
@@ -86,3 +106,8 @@ mongoose
     });
   })
   .catch(err => console.log(err));
+
+  const clearImage = filePath => {
+    filePath = path.join(__dirname, '..', filePath);
+    fs.unlink(filePath, err => console.log(err));
+  };
