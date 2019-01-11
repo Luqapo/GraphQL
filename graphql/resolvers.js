@@ -6,7 +6,7 @@ const User = require('../models/user');
 const Post = require('../models/post');
 
 module.exports = {
-    createUser: async function({ userInput }, req) {
+    createUser: async ({ userInput }, req) => {
         //const email = args.userInput.email;
         const errors = [];
         if(!validator.isEmail(userInput.email)){
@@ -38,7 +38,7 @@ module.exports = {
         
         return { ...user._doc, _id: user._id.toString() };
     },
-    login: async function({ email, password }) {
+    login: async ({ email, password }) => {
         const user = await User.findOne({email: email});
         if(!user){
             const error = new Error('User not found.');
@@ -154,5 +154,52 @@ module.exports = {
             createdAt: post.createdAt.toISOString(), 
             updatedAt: post.updatedAt.toISOString() 
         }
+    },
+    editPost: async ({postId, postInput}, req) => {
+        if(!req.isAuth){
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const errors = [];
+        if(validator.isEmpty(postInput.title)){
+            errors.push({message: 'Title is invalid.'})
+        }
+        if(
+            validator.isEmpty(postInput.content) || 
+            !validator.isLength(postInput.content, {min: 5})
+        ){
+            errors.push({message: 'Content to short.'})
+        }
+        if(errors.length > 0){
+            const error = new Error('Invalid input.');
+            error.data = errors;
+            error.code = 422;
+            throw error;
+        }
+        const post = await Post.findById(postId).populate('creator');
+        if(!post){
+            const error = new Error('No post found!');
+            error.code = 404;
+            throw error;
+        }
+        if(post.creator._id.toString() !== req.userId.toString()){
+            const error = new Error('Not authorized to edit that post!');
+            error.code = 403;
+            throw error;
+        }
+        post.title = postInput.title;
+        post.content = postInput.content;
+        if(postInput.imageUrl !== 'undefined'){
+            post.imageUrl = postInput.imageUrl;
+        }
+        await post.save();
+
+        return { 
+            ...post._doc, 
+            _id: post._id.toString(), 
+            createdAt: post.createdAt.toISOString(), 
+            updatedAt: post.updatedAt.toISOString() 
+        };
     }
 };
