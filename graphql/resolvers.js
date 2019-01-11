@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 
+const clearImage = require('../middleware/clearImage');
+
 const User = require('../models/user');
 const Post = require('../models/post');
 
@@ -108,7 +110,6 @@ module.exports = {
             updatedAt: post.updatedAt.toISOString() };
     },
     loadPosts: async ({ page }, req) => {
-        console.log('Query');
         if(!req.isAuth){
             const error = new Error('Not authenticated!');
             error.code = 401;
@@ -201,5 +202,37 @@ module.exports = {
             createdAt: post.createdAt.toISOString(), 
             updatedAt: post.updatedAt.toISOString() 
         };
+    },
+    deletePost: async ({ postId }, req) => {
+        if(!req.isAuth){
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const deletedPost = await Post.findByIdAndDelete(postId);
+        if(!deletedPost){
+            const error = new Error('No post found!');
+            error.code = 404;
+            throw error;
+        }
+        if(deletedPost.creator.toString() !== req.userId.toString()){
+            const error = new Error('Not authorized to edit that post!');
+            error.code = 403;
+            throw error;
+        }
+        clearImage(deletedPost.imageUrl);
+        const user = await User.findById(req.userId);
+        user.posts.pull(postId);
+        await user.save();
+
+        return {
+            message: 'Post deleted.',
+            post: {
+                ...deletedPost._doc, 
+            _id: deletedPost._id.toString(), 
+            createdAt: deletedPost.createdAt.toISOString(), 
+            updatedAt: deletedPost.updatedAt.toISOString() 
+            }
+        }
     }
 };
