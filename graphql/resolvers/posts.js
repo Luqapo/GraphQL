@@ -5,6 +5,15 @@ const clearImage = require('../../middleware/clearImage');
 const User = require('../../models/user');
 const Post = require('../../models/post');
 
+const transformPost = post => {
+    return { 
+        ...post._doc, 
+        _id: post._id.toString(), 
+        createdAt: post.createdAt.toISOString(), 
+        updatedAt: post.updatedAt.toISOString() 
+    };
+}
+
 module.exports = {
     createPost: async ({ postInput }, req) => {
         if(!req.isAuth){
@@ -46,11 +55,7 @@ module.exports = {
         user.posts.push(post);
         await user.save();
 
-        return { 
-            ...post._doc, 
-            _id: post._id.toString(), 
-            createdAt: post.createdAt.toISOString(), 
-            updatedAt: post.updatedAt.toISOString() };
+        return transformPost(post);
     },
     loadPosts: async ({ page }, req) => {
         if(!req.isAuth){
@@ -70,12 +75,7 @@ module.exports = {
         const totalPosts = await Post.find().countDocuments();
 
         return { posts: posts.map(p => {
-            return {
-                ...p._doc,
-                _id: p._id.toString(),
-                createdAt: p.createdAt.toISOString(),
-                updatedAt: p.updatedAt.toISOString()
-            };
+            return transformPost(p);
         }), 
         totalPosts: totalPosts };
     },
@@ -92,12 +92,7 @@ module.exports = {
             throw error;
         }
         
-        return { 
-            ...post._doc, 
-            _id: post._id.toString(), 
-            createdAt: post.createdAt.toISOString(), 
-            updatedAt: post.updatedAt.toISOString() 
-        }
+        return transformPost(post);
     },
     editPost: async ({postId, postInput}, req) => {
         if(!req.isAuth){
@@ -139,12 +134,7 @@ module.exports = {
         }
         await post.save();
 
-        return { 
-            ...post._doc, 
-            _id: post._id.toString(), 
-            createdAt: post.createdAt.toISOString(), 
-            updatedAt: post.updatedAt.toISOString() 
-        };
+        return transformPost(post);
     },
     deletePost: async ({ postId }, req) => {
         if(!req.isAuth){
@@ -169,13 +159,7 @@ module.exports = {
         await user.save();
 
         return {
-            message: 'Post deleted.',
-            post: {
-                ...deletedPost._doc, 
-            _id: deletedPost._id.toString(), 
-            createdAt: deletedPost.createdAt.toISOString(), 
-            updatedAt: deletedPost.updatedAt.toISOString() 
-            }
+            message: 'Post deleted.'
         }
     }
 };
