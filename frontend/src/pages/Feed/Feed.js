@@ -151,7 +151,6 @@ class Feed extends Component {
           console.log('Error!');
           throw new Error('Editing status failed!');
         }
-        console.log(resData.data.editStatus.status);
         this.setState({
           status: resData.data.editStatus.status
         })
